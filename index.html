@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>LGDS Price Calculator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Local Garage Door Service</div>
+        <h1>Price Calculator</h1>
+      </div>
+      <button id="logoutBtn" class="ghost hidden">Log out</button>
+    </header>
+
+    <main>
+      <section id="categoryScreen" class="card screen active">
+        <h2>Choose Product</h2>
+        <p class="muted">Select what you are pricing today.</p>
+        <div class="grid three">
+          <button class="choice product" data-category="springs">
+            <span>Springs</span>
+            <small>Torsion spring pricing</small>
+          </button>
+          <button class="choice product" data-category="openers">
+            <span>Openers</span>
+            <small>Motors, rails & labor</small>
+          </button>
+          <button class="choice product" data-category="doors">
+            <span>Doors</span>
+            <small>Door size, insulation, windows</small>
+          </button>
+        </div>
+      </section>
+
+      <section id="loginScreen" class="card screen">
+        <button class="backBtn" id="backToCategory">← Back</button>
+        <h2 id="loginTitle">Login</h2>
+        <p class="muted">Choose login type and enter the password.</p>
+
+        <div class="role-toggle">
+          <button class="role active" data-role="tech">Technician</button>
+          <button class="role" data-role="admin">Admin</button>
+        </div>
+
+        <div class="login-box">
+          <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
+          <button id="loginBtn" class="primary">Enter</button>
+        </div>
+        <div id="loginError" class="error hidden">Wrong password. Try again.</div>
+      </section>
+
+      <section id="calculatorScreen" class="screen">
+        <div class="calc-layout">
+          <section class="card calc-card">
+            <div class="calc-head">
+              <div>
+                <button class="backBtn" id="backToLogin">← Back</button>
+                <h2 id="calcTitle">Calculator</h2>
+                <p class="muted" id="roleLabel"></p>
+              </div>
+              <div class="total-pill">
+                <span>Total</span>
+                <strong id="totalAmount">$0</strong>
+              </div>
+            </div>
+
+            <div id="formArea" class="form-area"></div>
+
+            <div class="summary">
+              <h3>Summary</h3>
+              <div id="summaryArea"></div>
+            </div>
+          </section>
+
+          <aside id="adminPanel" class="card admin-panel hidden">
+            <div class="admin-head">
+              <div>
+                <h2>Admin Settings</h2>
+                <p class="muted">Edit prices, options, and passwords. Saved on this device/browser.</p>
+              </div>
+              <button id="resetDataBtn" class="danger-outline">Reset Defaults</button>
+            </div>
+
+            <div class="passwords-box">
+              <h3>Passwords</h3>
+              <label>
+                Admin password
+                <input id="adminPassInput" type="text" />
+              </label>
+              <label>
+                Technician password
+                <input id="techPassInput" type="text" />
+              </label>
+              <button id="savePasswordsBtn" class="primary small">Save Passwords</button>
+            </div>
+
+            <div id="adminEditor"></div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <button id="jumpTotalBtn" class="jump-total hidden">Total ↓</button>
+
+  <script src="app.js"></script>
+</body>
+</html>
