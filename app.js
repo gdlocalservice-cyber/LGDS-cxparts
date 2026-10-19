@@ -693,15 +693,21 @@ function openerMiniLogo(label) {
 
 function buildCustomerIntro(category) {
   const wrap = document.createElement("section");
-  wrap.className = "customer-intro brand-intro";
-  const titles = { springs: "Spring Replacement", openers: "Garage Door Openers", doors: "Garage Doors" };
-  const logos = { springs: "springs-logos.png", openers: "openers-logos.png", doors: "doors-logos.png" };
+  wrap.className = "customer-intro brand-intro brand-showcase";
+  const brands = category === "openers"
+    ? [["liftmaster", "LiftMaster"], ["chamberlain", "Chamberlain"], ["genie", "Genie"]]
+    : category === "doors"
+      ? [["clopay", "Clopay"], ["wayne-dalton", "Wayne Dalton"], ["amarr", "Amarr"]]
+      : [["clopay", "Clopay"], ["wayne-dalton", "Wayne Dalton"]];
+  const spring = category === "springs";
   wrap.innerHTML = `
-    <div class="brand-intro-heading">
-      <span class="brand-category-title">${titles[category]}</span>
-      ${category === "springs" ? '<span class="lifetime-badge"><span aria-hidden="true">✓</span> Lifetime Warranty</span>' : ""}
+    <div class="showcase-topline">LOCAL GARAGE DOOR SERVICE</div>
+    ${spring ? `<div class="warranty-feature"><span class="warranty-mark" aria-hidden="true">✓</span><div><span class="warranty-overline">SPRING REPLACEMENT</span><h2>Lifetime <span>Warranty</span></h2></div></div>`
+      : `<h2 class="showcase-title">${category === "openers" ? "Garage Door Openers" : "Garage Doors"}</h2>`}
+    <div class="brand-showcase-grid ${spring ? "two-brands" : ""}">
+      ${brands.map(([file, name]) => `<div class="brand-tile"><img src="assets/brands/${file}.svg" alt="${name}" width="160" height="60" /></div>`).join("")}
     </div>
-    <div class="logo-image-wrap"><img src="assets/${logos[category]}" alt="${category === "openers" ? "Opener" : category === "springs" ? "Spring" : "Garage door"} brands" /></div>
+    ${spring ? '<p class="brand-context">Garage door brands</p>' : ""}
   `;
   return wrap;
 }
