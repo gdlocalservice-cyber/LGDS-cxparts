@@ -1474,3 +1474,22 @@ body.tech-mode .customer-intro.brand-showcase,
 
 /* Additional brands are editorial copy, not an interactive control. */
 .brand-context .brands-more { width:auto; margin:10px 0 4px; padding:0; border:0; border-radius:0; background:none; box-shadow:none; color:#253c78; font-size:clamp(18px,4vw,23px); font-weight:700; letter-spacing:0; cursor:default; }
+
+.product-preview { margin:14px 0 20px; border:1px solid #e0e5ed; border-radius:16px; overflow:hidden; background:#fafbfD; }
+.preview-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; font-size:14px; font-weight:700; color:#253c78; }
+.preview-heading button { background:none; border:0; color:#4257a8; padding:8px; cursor:pointer; font-size:12px; }
+.preview-art { background:#f1f0ec; }
+.preview-art svg { display:block; width:100%; max-height:310px; }
+.preview-art .opener-photo { display:block; width:100%; height:240px; object-fit:contain; background:white; }
+.preview-details { padding:10px 14px 0; font-size:12px; color:#344054; }
+.preview-note { font-size:11px; line-height:1.45; color:#667085; padding:0 14px 12px; margin:8px 0 0; }
+.preview-empty { padding:44px 20px; text-align:center; color:#667085; font-size:14px; }
+.preview-color { display:flex; gap:10px; align-items:center; margin-top:10px; }
+.preview-color input { width:50px; height:34px; padding:2px; }
+.preview-dialog { width:min(960px,95vw); border:0; border-radius:18px; padding:20px; max-height:90vh; }
+.preview-dialog::backdrop { background:#111827bb; }
+.preview-dialog svg { width:100%; max-height:70vh; }
+.preview-dialog img { display:block; width:100%; max-height:65vh; object-fit:contain; }
+.preview-dialog button { display:block; margin-left:auto; min-width:44px; min-height:44px; border:0; border-radius:50%; font-size:28px; cursor:pointer; }
+.preview-dialog p { font-size:12px; color:#667085; }
+@media(min-width:1000px) { body.tech-mode .form-area:has(#productPreview:not([hidden])) { display:flow-root; } body.tech-mode .product-preview:not([hidden]) { float:right; width:44%; margin:14px 0 20px 24px; } body.tech-mode .form-area:has(#productPreview:not([hidden])) .group, body.tech-mode .form-area:has(#productPreview:not([hidden])) .qty-row, body.tech-mode .form-area:has(#productPreview:not([hidden])) .quote-extras { width:calc(56% - 24px); } }
