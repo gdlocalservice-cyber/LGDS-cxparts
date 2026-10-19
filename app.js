@@ -70,10 +70,14 @@ const DEFAULT_DATA = {
         multi: false,
         required: true,
         options: [
-          { label: "Chamberlain 1/2 HP", price: 340 },
-          { label: "Chamberlain 3/4 HP", price: 575 },
-          { label: "LiftMaster 8155", price: 1275 },
-          { label: "LiftMaster 84504R", price: 1645 }
+          { label: "Chamberlain · 1/2 HP", price: 425 },
+          { label: "Chamberlain · 3/4 HP", price: 700 },
+          { label: "Chamberlain · Smart DC · Camera", price: 1100 },
+          { label: "LiftMaster · 1/2 HP", price: 1550 },
+          { label: "LiftMaster · 3/4 HP · Heavy Duty", price: 1800 },
+          { label: "LiftMaster · Smart DC · Camera", price: 2000 },
+          { label: "Chamberlain · Side Mount", price: 1650, mount: "wall" },
+          { label: "LiftMaster · Side Mount", price: 2400, mount: "wall" }
         ]
       },
       {
@@ -197,6 +201,12 @@ let adjustmentsOpen = false;
 // Labels are presentation only; retain the existing option prices and indices.
 function normalizeSpringLabels() {
   if (data.openers?.groups) {
+    if (data.openers.catalogVersion !== 2) {
+      const brand = data.openers.groups.find(group => group.key === "brand");
+      if (brand) brand.options = clone(DEFAULT_DATA.openers.groups.find(group => group.key === "brand").options);
+      data.openers.catalogVersion = 2;
+    }
+
     data.openers.groups = data.openers.groups.filter(group => !/labor|warranty/i.test(group.key) && !/labor|warranty/i.test(group.label));
     data.openers.groups.forEach(group => group.options.forEach(option => {
       option.label = option.label.replace(/\s*\+\s*.*?warranty\b/gi, "").trim();
@@ -386,6 +396,8 @@ function renderForm() {
     if (/discount/i.test(group.key)) return;
     const section = document.createElement("section");
     section.className = "group";
+    section.dataset.groupKey = group.key;
+    section.dataset.groupKey = group.key;
     const showOptionPrices = /discount/i.test(group.label) || /discount/i.test(group.key);
     if (showOptionPrices) section.classList.add("price-visible");
 
@@ -512,7 +524,8 @@ function computeQuote(groups, chosen, units, extras, discount) {
   const cents = value => Math.round((Number(value) || 0) * 100);
   const lines = [];
   let unitCents = 0;
-  groups.filter(group => !/discount/i.test(group.key)).forEach(group => {
+  const selectedOpener = groups.find(group => group.key === "brand")?.options[chosen.brand];
+  groups.filter(group => !/discount/i.test(group.key) && !(selectedOpener?.mount === "wall" && group.key === "rails")).forEach(group => {
     const picked = chosen[group.key];
     (Array.isArray(picked) ? picked : [picked]).forEach(index => {
       if (index === null || index === undefined || !group.options[index]) return;
@@ -533,7 +546,12 @@ function computeQuote(groups, chosen, units, extras, discount) {
 }
 
 function calculate() {
-  const result = computeQuote(data[selectedCategory].groups, selections, quantity, quoteExtras, quoteDiscount);
+  const brand = data.openers?.groups.find(group => group.key === "brand");
+  const wallMount = selectedCategory === "openers" && brand?.options[selections.brand]?.mount === "wall";
+  const railsSection = document.querySelector('.group[data-group-key="rails"]');
+  if (railsSection) railsSection.hidden = !!wallMount;
+  const quoteGroups = data[selectedCategory].groups.filter(group => !(wallMount && group.key === "rails"));
+  const result = computeQuote(quoteGroups, selections, quantity, quoteExtras, quoteDiscount);
   $("totalAmount").textContent = money(result.total);
   if ($("bottomTotalAmount")) $("bottomTotalAmount").textContent = money(result.total);
   $("liveTotal").textContent = money(result.total);
@@ -695,19 +713,19 @@ function buildCustomerIntro(category) {
   const wrap = document.createElement("section");
   wrap.className = "customer-intro brand-intro brand-showcase";
   const brands = category === "openers"
-    ? [["liftmaster", "LiftMaster"], ["chamberlain", "Chamberlain"], ["genie", "Genie"]]
+    ? [["liftmaster", "LiftMaster"], ["chamberlain", "Chamberlain"]]
     : category === "doors"
-      ? [["clopay", "Clopay"], ["wayne-dalton", "Wayne Dalton"], ["amarr", "Amarr"]]
-      : [["clopay", "Clopay"], ["wayne-dalton", "Wayne Dalton"]];
+      ? [["clopay", "Clopay"], ["amarr", "Amarr"]]
+      : [["clopay", "Clopay"], ["amarr", "Amarr"]];
   const spring = category === "springs";
   wrap.innerHTML = `
     <div class="showcase-topline">LOCAL GARAGE DOOR SERVICE</div>
     ${spring ? `<div class="warranty-feature"><span class="warranty-mark" aria-hidden="true">✓</span><div><span class="warranty-overline">SPRING REPLACEMENT</span><h2>Lifetime <span>Warranty</span></h2></div></div>`
       : `<h2 class="showcase-title">${category === "openers" ? "Garage Door Openers" : "Garage Doors"}</h2>`}
-    <div class="brand-showcase-grid ${spring ? "two-brands" : ""}">
+    <div class="brand-showcase-grid two-brands">
       ${brands.map(([file, name]) => `<div class="brand-tile"><img src="assets/brands/${file}.svg" alt="${name}" width="160" height="60" /></div>`).join("")}
     </div>
-    ${spring ? '<p class="brand-context">Garage door brands</p>' : ""}
+    <p class="brand-context">${spring ? "Garage door brands · And more" : "These brands and more"}</p>
   `;
   return wrap;
 }
