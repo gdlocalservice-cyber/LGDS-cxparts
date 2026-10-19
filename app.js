@@ -181,20 +181,29 @@ const DEFAULT_DATA = {
 };
 
 function applyPriceRevision(catalog) {
-  if (catalog.openers && !["20261019-v3", "20261019-v4"].includes(catalog.openers.priceRevision)) {
+  if (catalog.openers && !["20261019-v3", "20261019-v4", "20261019-v5"].includes(catalog.openers.priceRevision)) {
     catalog.openers.groups.find(group => group.key === "brand")?.options.forEach(option => {
       if (/chamberlain/i.test(option.label)) option.price = (Number(option.price) || 0) + 200;
       else if (/liftmaster/i.test(option.label)) option.price = (Number(option.price) || 0) + 400;
     });
     catalog.openers.priceRevision = "20261019-v3";
   }
-  if (catalog.openers && catalog.openers.priceRevision !== "20261019-v4") {
+  if (catalog.openers && !["20261019-v4", "20261019-v5"].includes(catalog.openers.priceRevision)) {
     catalog.openers.groups.find(group => group.key === "brand")?.options.forEach(option => {
       if (/chamberlain|liftmaster/i.test(option.label)) {
         option.price = Math.round((Number(option.price) || 0) * (950 / 625) / 25) * 25;
       }
     });
     catalog.openers.priceRevision = "20261019-v4";
+  }
+  if (catalog.openers && catalog.openers.priceRevision !== "20261019-v5") {
+    const priceLadder = [795, 995, 1195, 1095, 1295, 1495, 1595, 1895];
+    const defaults = DEFAULT_DATA.openers.groups.find(group => group.key === "brand").options;
+    catalog.openers.groups.find(group => group.key === "brand")?.options.forEach(option => {
+      const index = defaults.findIndex(reference => reference.label === option.label);
+      if (index >= 0) option.price = priceLadder[index];
+    });
+    catalog.openers.priceRevision = "20261019-v5";
   }
   if (catalog.doors && catalog.doors.priceRevision !== "20261019-v3") {
     catalog.doors.groups.find(group => group.key === "size")?.options.forEach(option => {
