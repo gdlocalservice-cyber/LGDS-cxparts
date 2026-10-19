@@ -1468,3 +1468,6 @@ body.tech-mode .customer-intro.brand-showcase,
  .showcase-title { font-size: 20px; }
  .warranty-feature { margin-bottom: 16px; }
 }
+
+/* Make the additional-brand message clear in every showcase. */
+.brand-context .brands-more { display:block; width:fit-content; margin:12px auto 4px; padding:12px 24px; border:2px solid #d6aa3d; border-radius:999px; background:#172c65; color:#ffda77; font-size:clamp(18px,4.5vw,25px); font-weight:900; letter-spacing:.02em; }
