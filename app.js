@@ -138,7 +138,6 @@ const DEFAULT_DATA = {
         options: [
           { label: "White", price: 0 },
           { label: "Almond", price: 0 },
-          { label: "Brown", price: 0 },
           { label: "Custom color", price: 0 }
         ]
       },
@@ -159,8 +158,7 @@ const DEFAULT_DATA = {
         required: true,
         options: [
           { label: "No windows", price: 0 },
-          { label: "Long panel windows", price: 365 },
-          { label: "Short panel windows", price: 365 }
+          { label: "With windows", price: 365 }
         ]
       },
       {
@@ -218,8 +216,14 @@ function applyPriceRevision(catalog) {
   }
   catalog.doors?.groups.forEach(group => {
     if (group.key === "shape") group.options = group.options.filter(option => !/\bflush\b/i.test(option.label));
-    if (group.key === "color") group.options = group.options.filter(option => !/sand\s*stone/i.test(option.label));
+    if (group.key === "color") group.options = group.options.filter(option => !/sand\s*stone|^brown$/i.test(option.label.trim()));
   });
+  const windows = catalog.doors?.groups.find(group => group.key === "windows");
+  if (windows && (windows.options.length !== 2 || !windows.options.some(option => option.label === "With windows"))) {
+    const without = windows.options.find(option => /no windows/i.test(option.label));
+    const withGlass = windows.options.find(option => /with windows|long panel windows|short panel windows/i.test(option.label));
+    windows.options = [{label: "No windows", price: without?.price ?? 0}, {label: "With windows", price: withGlass?.price ?? 365}];
+  }
   const colors = catalog.doors?.groups.find(group => group.key === "color");
   if (colors) {
     for (const label of ["Black", "Woodgrain"]) {
