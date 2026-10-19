@@ -218,6 +218,14 @@ function applyPriceRevision(catalog) {
     });
     catalog.doors.priceRevision = "20261019-v3";
   }
+  const colors = catalog.doors?.groups.find(group => group.key === "color");
+  if (colors) {
+    for (const label of ["Black", "Woodgrain"]) {
+      if (!colors.options.some(option => option.label.toLowerCase() === label.toLowerCase())) {
+        colors.options.push({label, price: 150});
+      }
+    }
+  }
 }
 DEFAULT_DATA.openers.catalogVersion = 2;
 applyPriceRevision(DEFAULT_DATA);
@@ -915,5 +923,6 @@ $("saveExtra").onclick = () => {
 // Load shared Admin settings from Netlify on page open.
 // If the site is opened locally without Netlify Functions, it falls back to the built-in defaults.
 loadGlobalSettings();
+
 
 
