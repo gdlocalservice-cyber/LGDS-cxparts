@@ -181,12 +181,20 @@ const DEFAULT_DATA = {
 };
 
 function applyPriceRevision(catalog) {
-  if (catalog.openers && catalog.openers.priceRevision !== "20261019-v3") {
+  if (catalog.openers && !["20261019-v3", "20261019-v4"].includes(catalog.openers.priceRevision)) {
     catalog.openers.groups.find(group => group.key === "brand")?.options.forEach(option => {
       if (/chamberlain/i.test(option.label)) option.price = (Number(option.price) || 0) + 200;
       else if (/liftmaster/i.test(option.label)) option.price = (Number(option.price) || 0) + 400;
     });
     catalog.openers.priceRevision = "20261019-v3";
+  }
+  if (catalog.openers && catalog.openers.priceRevision !== "20261019-v4") {
+    catalog.openers.groups.find(group => group.key === "brand")?.options.forEach(option => {
+      if (/chamberlain|liftmaster/i.test(option.label)) {
+        option.price = Math.round((Number(option.price) || 0) * (950 / 625) / 25) * 25;
+      }
+    });
+    catalog.openers.priceRevision = "20261019-v4";
   }
   if (catalog.doors && catalog.doors.priceRevision !== "20261019-v3") {
     catalog.doors.groups.find(group => group.key === "size")?.options.forEach(option => {
