@@ -1375,3 +1375,31 @@ body.admin-view .customer-back,
 body.admin-view .customer-back-wrap {
   display: none !important;
 }
+
+
+/* On-site quoting: keep the amount visible throughout configuration. */
+[hidden] { display: none !important; }
+body { padding-bottom: 110px; }
+.live-price-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px max(16px, calc((100vw - 1120px) / 2)); padding-bottom: max(16px, env(safe-area-inset-bottom)); background: #172c65; color: white; box-shadow: 0 -4px 22px #0003; }
+.live-price-bar span { display: block; font-weight: 700; }
+.live-price-bar small { display: block; margin-top: 5px; color: #dae2f7; font-size: 11px; }
+.live-price-bar strong { font-size: clamp(28px, 6vw, 44px); white-space: nowrap; font-variant-numeric: tabular-nums; }
+@keyframes pricePulse { from { color: #ffd36b; transform: scale(1.03); } to { color: white; transform: scale(1); } }
+.price-updated { animation: pricePulse .4s ease-out; }
+@media (prefers-reduced-motion: reduce) { .price-updated { animation: none; } }
+body.tech-mode .summary { display: block; padding: 18px 10px; }
+.quote-extras { margin: 24px 10px; border-top: 1px solid #dfe5ec; padding-top: 20px; }
+.quote-extras .ghost { margin-right: 22px; min-height: 44px; }
+.selection-label { display: block; color: #4257a8; font-size: 14px; max-width: 55%; text-align: right; }
+.total-caption, .quote-tax-note { color: #687386; }
+.quote-tools { border: 0; border-radius: 20px; width: min(520px, calc(100% - 24px)); max-height: 85vh; padding: 24px; box-shadow: 0 20px 60px #0005; }
+.quote-tools::backdrop { background: #101828bb; }
+.tools-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.tools-heading button { border: 0; background: #eef3f9; border-radius: 12px; width: 44px; height: 44px; font-size: 26px; cursor: pointer; }
+.quote-tools label { display: block; margin: 16px 0; }
+.quote-tools input, .quote-tools select { display: block; width: 100%; margin-top: 6px; padding: 12px; border: 1px solid #dfe5ec; border-radius: 12px; font: inherit; }
+.quote-tools .checkbox-label { display: flex; gap: 10px; align-items: center; }
+.quote-tools .checkbox-label input { width: 22px; height: 22px; margin: 0; }
+#discountPresets { display: grid; gap: 6px; }
+#discountPresets button { text-align: left; min-height: 44px; }
+body:not(.admin-view) .calc-layout { grid-template-columns: minmax(0, 1fr); }

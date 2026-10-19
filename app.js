@@ -9,12 +9,12 @@ const DEFAULT_DATA = {
     groups: [
       {
         key: "side",
-        label: "Side",
+        label: "Spring color / quantity",
         multi: false,
         required: true,
         options: [
-          { label: "Left", price: 550 },
-          { label: "Right", price: 550 },
+          { label: "Red", price: 550 },
+          { label: "Black", price: 550 },
           { label: "Pair", price: 1200 }
         ]
       },
@@ -82,10 +82,10 @@ const DEFAULT_DATA = {
         multi: false,
         required: true,
         options: [
-          { label: '7"', price: 165 },
-          { label: '8"', price: 225 },
-          { label: '9"', price: 345 },
-          { label: '10"', price: 375 },
+          { label: "7 ft", price: 165 },
+          { label: "8 ft", price: 225 },
+          { label: "9 ft", price: 345 },
+          { label: "10 ft", price: 375 },
           { label: "No rail", price: 0 }
         ]
       },
@@ -199,12 +199,26 @@ let currentRole = "tech";
 let loggedRole = null;
 let selections = {};
 let quantity = 1;
+let quoteExtras = [];
+let quoteDiscount = { type: "fixed", value: 0 };
+let adjustmentsOpen = false;
+
+// Labels are presentation only; retain the existing option prices and indices.
+function normalizeSpringLabels() {
+  const side = data.springs?.groups.find(group => group.key === "side");
+  if (!side) return;
+  side.label = "Spring color / quantity";
+  side.options.forEach(option => {
+    if (option.label === "Left") option.label = "Red";
+    if (option.label === "Right") option.label = "Black";
+  });
+}
+normalizeSpringLabels();
 
 const $ = (id) => document.getElementById(id);
 
 function money(value) {
-  const rounded = Math.round(Number(value) || 0);
-  return `$${rounded.toLocaleString()}`;
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
 }
 
 function clone(obj) {
@@ -247,6 +261,7 @@ async function loadGlobalSettings() {
 
     if (remote?.data) {
       data = remote.data;
+      normalizeSpringLabels();
       localStorage.setItem(DATA_KEY, JSON.stringify(data));
     }
 
@@ -293,7 +308,9 @@ function showScreen(id) {
   document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
   $(id).classList.add("active");
   $("logoutBtn").classList.toggle("hidden", id !== "calculatorScreen");
-  $("jumpTotalBtn").classList.toggle("hidden", id !== "calculatorScreen");
+  $("jumpTotalBtn").classList.add("hidden");
+  $("livePriceBar").hidden = id !== "calculatorScreen";
+  if (id !== "calculatorScreen" && $("quoteTools").open) $("quoteTools").close();
 }
 
 function setRole(role) {
@@ -334,6 +351,9 @@ function initSelections() {
     }
   });
   quantity = 1;
+  quoteExtras = [];
+  quoteDiscount = { type: "fixed", value: 0 };
+  adjustmentsOpen = false;
 }
 
 function startCalculator() {
@@ -341,6 +361,8 @@ function startCalculator() {
   $("calcTitle").textContent = `${data[selectedCategory].title} Calculator`;
   $("roleLabel").textContent = loggedRole === "admin" ? "Admin mode: calculator + editable pricing." : "Technician mode.";
   $("adminPanel").classList.toggle("hidden", loggedRole !== "admin");
+  document.body.classList.toggle("tech-mode", loggedRole === "tech");
+  document.body.classList.toggle("admin-view", loggedRole === "admin");
   renderForm();
   if (loggedRole === "admin") renderAdmin();
   calculate();
@@ -364,6 +386,7 @@ function renderForm() {
   }
 
   data[selectedCategory].groups.forEach(group => {
+    if (/discount/i.test(group.key)) return;
     const section = document.createElement("section");
     section.className = "group";
     const showOptionPrices = /discount/i.test(group.label) || /discount/i.test(group.key);
@@ -372,7 +395,7 @@ function renderForm() {
     section.innerHTML = `
       <div class="group-title">
         <h3>${escapeHtml(group.label)}</h3>
-        <span class="muted">${group.multi ? "Choose any" : "Choose one"}</span>
+        <span class="selection-label">${group.multi ? "Optional" : "Choose one"}</span>
       </div>
       <div class="group-content">
         <div class="options"></div>
@@ -410,20 +433,31 @@ function renderForm() {
   qty.className = "qty-row";
   qty.innerHTML = `
     <strong>Quantity</strong>
-    <input id="qtyInput" type="number" min="1" step="1" value="1" />
+    <input id="qtyInput" aria-label="Number of units" type="number" min="1" max="100" step="1" value="${quantity}" />
   `;
   form.appendChild(qty);
 
   $("qtyInput").addEventListener("input", () => {
-    quantity = Math.max(1, parseInt($("qtyInput").value || "1", 10));
+    quantity = Math.min(100, Math.max(1, parseInt($("qtyInput").value || "1", 10)));
+    renderExtras();
     calculate();
   });
+
+  const extras = document.createElement("section");
+  extras.className = "quote-extras";
+  extras.innerHTML = `<h3>Additional services</h3><div id="extrasList"></div>
+    <button type="button" id="addExtraBtn" class="ghost">+ Add extra</button>
+    <button type="button" id="adjustmentsBtn" class="ghost">Adjustments</button>`;
+  form.appendChild(extras);
+  $("addExtraBtn").onclick = () => openQuoteTools("extras");
+  $("adjustmentsBtn").onclick = () => openQuoteTools("discount");
+  renderExtras();
 
   const bottomTotal = document.createElement("div");
   bottomTotal.className = "bottom-total";
   bottomTotal.innerHTML = `
     <div id="bottomTotalAmount" class="total-number">$0</div>
-    <button type="button" class="call-order">CALL & ORDER</button>
+    <p class="total-caption">Selected services total</p><p class="quote-tax-note">Tax and payment fees are not calculated here.</p>
   `;
   form.appendChild(bottomTotal);
 
@@ -456,7 +490,7 @@ function selectOption(group, optionIndex) {
   refreshActiveButtons();
   calculate();
 
-  if (!document.body.classList.contains("admin-view")) {
+  if (!group.multi && !document.body.classList.contains("admin-view")) {
     const groups = [...document.querySelectorAll(".group")];
     const currentSection = [...groups].find(g => g.querySelector(`.option[data-group-key="${group.key}"]`));
     const idx = groups.indexOf(currentSection);
@@ -477,59 +511,95 @@ function refreshActiveButtons() {
   });
 }
 
-function calculate() {
+function computeQuote(groups, chosen, units, extras, discount) {
+  const cents = value => Math.round((Number(value) || 0) * 100);
   const lines = [];
-  let subtotal = 0;
-
-  data[selectedCategory].groups.forEach(group => {
-    const selected = selections[group.key];
-    const selectedIndexes = Array.isArray(selected) ? selected : [selected];
-
-    selectedIndexes.forEach(index => {
-      if (index === null || index === undefined) return;
+  let unitCents = 0;
+  groups.filter(group => !/discount/i.test(group.key)).forEach(group => {
+    const picked = chosen[group.key];
+    (Array.isArray(picked) ? picked : [picked]).forEach(index => {
+      if (index === null || index === undefined || !group.options[index]) return;
       const option = group.options[index];
-      if (!option) return;
-      subtotal += Number(option.price) || 0;
-      lines.push({
-        group: group.label,
-        label: option.label,
-        price: Number(option.price) || 0
-      });
+      unitCents += cents(option.price);
+      lines.push({ group: group.label, label: option.label, price: Number(option.price) || 0 });
     });
   });
+  const count = Math.min(100, Math.max(1, Math.floor(Number(units) || 1)));
+  const base = Math.max(0, unitCents * count);
+  const extraCents = extras.reduce((sum, item) => sum + Math.max(0, cents(item.price)) * Math.max(1, Math.floor(Number(item.quantity) || 1)) * (item.perUnit ? count : 1), 0);
+  const subtotal = base + extraCents;
+  const rawDiscount = discount.type === "percent"
+    ? Math.round(subtotal * Math.min(100, Math.max(0, Number(discount.value) || 0)) / 100)
+    : cents(Math.max(0, Number(discount.value) || 0));
+  const reduction = Math.min(subtotal, rawDiscount);
+  return { lines, subtotal: subtotal / 100, discount: reduction / 100, total: (subtotal - reduction) / 100 };
+}
 
-  const total = subtotal * quantity;
-  $("totalAmount").textContent = money(total);
-  const bottomTotalEl = $("bottomTotalAmount");
-  if (bottomTotalEl) bottomTotalEl.textContent = money(total);
-
+function calculate() {
+  const result = computeQuote(data[selectedCategory].groups, selections, quantity, quoteExtras, quoteDiscount);
+  $("totalAmount").textContent = money(result.total);
+  if ($("bottomTotalAmount")) $("bottomTotalAmount").textContent = money(result.total);
+  $("liveTotal").textContent = money(result.total);
+  $("liveTotal").classList.remove("price-updated");
+  void $("liveTotal").offsetWidth;
+  $("liveTotal").classList.add("price-updated");
   const summary = $("summaryArea");
-  const details = loggedRole === "admin";
   summary.innerHTML = "";
+  const row = (label, value) => {
+    const el = document.createElement("div");
+    el.className = "summary-line";
+    el.innerHTML = `<span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span>`;
+    summary.appendChild(el);
+  };
+  result.lines.forEach(line => row(`${line.group}: ${line.label}`, loggedRole === "admin" ? money(line.price) : "Included"));
+  if (quantity > 1) row("Units", String(quantity));
+  quoteExtras.forEach(item => row(`${item.label} × ${item.quantity}${item.perUnit ? " per unit" : ""}`, money(item.price * item.quantity * (item.perUnit ? quantity : 1))));
+  if (result.discount) row("Applied discount", `−${money(result.discount)}`);
+  row("Selected services total", money(result.total));
+  document.querySelectorAll(".group").forEach(section => {
+    const button = section.querySelector(".option");
+    if (!button) return;
+    const group = data[selectedCategory].groups.find(g => g.key === button.dataset.groupKey);
+    const picked = selections[group.key];
+    const indexes = Array.isArray(picked) ? picked : [picked];
+    section.querySelector(".selection-label").textContent = indexes.map(i => group.options[i]?.label).filter(Boolean).join(", ") || "Optional";
+  });
+}
 
-  if (!lines.length) {
-    summary.innerHTML = `<p class="muted">Choose options to calculate the total.</p>`;
-    return;
-  }
-
-  lines.forEach(line => {
+function renderExtras() {
+  const list = $("extrasList");
+  if (!list) return;
+  list.innerHTML = "";
+  quoteExtras.forEach((item, index) => {
     const row = document.createElement("div");
     row.className = "summary-line";
-    row.innerHTML = `<span>${escapeHtml(line.group)}: ${escapeHtml(line.label)}</span><span>${details ? money(line.price) : "✓"}</span>`;
-    summary.appendChild(row);
+    row.innerHTML = `<span>${escapeHtml(item.label)} × ${item.quantity}${item.perUnit ? " per unit" : ""}</span><span>${money(item.price * item.quantity * (item.perUnit ? quantity : 1))} <button type="button" aria-label="Remove extra">×</button></span>`;
+    row.querySelector("button").onclick = () => { quoteExtras.splice(index, 1); renderExtras(); calculate(); };
+    list.appendChild(row);
   });
+}
 
-  if (quantity > 1) {
-    const qtyRow = document.createElement("div");
-    qtyRow.className = "summary-line";
-    qtyRow.innerHTML = `<span>Quantity</span><span>x${quantity}</span>`;
-    summary.appendChild(qtyRow);
-  }
-
-  const totalRow = document.createElement("div");
-  totalRow.className = "summary-line";
-  totalRow.innerHTML = `<span><strong>Final total</strong></span><span>${money(total)}</span>`;
-  summary.appendChild(totalRow);
+function openQuoteTools(mode) {
+  const dialog = $("quoteTools");
+  adjustmentsOpen = true;
+  $("discountTools").hidden = mode !== "discount";
+  $("extraTools").hidden = mode !== "extras";
+  $("toolsTitle").textContent = mode === "discount" ? "Price adjustment" : "Add extra";
+  $("discountType").value = quoteDiscount.type;
+  $("discountValue").value = quoteDiscount.value;
+  const presets = $("discountPresets");
+  presets.innerHTML = "";
+  const group = data[selectedCategory].groups.find(g => /discount/i.test(g.key));
+  (group?.options || []).filter(option => Number(option.price) < 0).forEach(option => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ghost";
+    button.textContent = `${option.label} (${money(Math.abs(option.price))})`;
+    button.onclick = () => { $("discountType").value = "fixed"; $("discountValue").value = Math.abs(option.price); };
+    presets.appendChild(button);
+  });
+  $("toolError").textContent = "";
+  dialog.showModal();
 }
 
 function renderAdmin() {
@@ -631,15 +701,15 @@ function buildCustomerIntro(category) {
   if (category === "springs") {
     wrap.innerHTML = `
       <div class="customer-hero">
-        <div class="customer-title">Life Time WARRANTY SPRINGS</div>
+        <div class="customer-title">Professional Spring Replacement</div>
       </div>
       <div class="logo-image-wrap">
         <img src="assets/springs-logos.png" alt="Spring brands" />
       </div>
       <div class="spring-copy">
-        <p class="big">Our production is made in the U.S.A.</p>
-        <p>All springs are manufactured with <strong>high carbon Astm 229 class ii oil-tempered wire.</strong></p>
-        <p><strong>The life cycle of 70,000 times</strong> the garage door opens and closes before the spring breaks compared to 10,000 times with other spring brands.</p>
+        <p class="big">Springs selected for your garage door.</p>
+        <p>Your technician will confirm the correct spring specifications for your door.</p>
+        <p>Ask your technician about the cycle rating and warranty for the springs included in your quote.</p>
       </div>
       <div class="customer-hero">
         <div class="customer-title">Highest Quality Springs</div>
@@ -653,7 +723,7 @@ function buildCustomerIntro(category) {
         </ul>
       </div>
       <div class="customer-hero">
-        <div class="customer-title">Life Time WARRANTY SPRINGS</div>
+        <div class="customer-title">Professional Spring Replacement</div>
       </div>
     `;
     return wrap;
@@ -669,7 +739,7 @@ function buildCustomerIntro(category) {
         <p>At our company, we specialize in garage door openers, offering expert advice and personalized service.</p>
         <p><strong>Professional Installation</strong></p>
         <p>When you purchase a garage door opener from us, you have the option to avail professional installation services.</p>
-        <p>All prices listed on our website include labor costs.</p>
+        <p>Your quote includes the selected opener, rail and installation labor shown in the summary.</p>
       </div>
       <div class="customer-hero">
         <div class="customer-title">Highest Quality Openers</div>
@@ -689,7 +759,7 @@ function buildCustomerIntro(category) {
       <p>When you purchase a garage door from us, you have the option to avail professional installation services.</p>
     </div>
     <div class="customer-hero">
-      <div class="customer-title">Life-Time warranty</div>
+      <div class="customer-title">Professional Door Installation</div>
     </div>
     <div class="customer-hero" style="padding-top:0">
       <div class="customer-title" style="color:#4257a8">BUY NOW</div>
@@ -750,6 +820,7 @@ $("savePasswordsBtn").addEventListener("click", () => {
 $("resetDataBtn").addEventListener("click", () => {
   if (!confirm("Reset all prices/options/passwords back to defaults?")) return;
   data = clone(DEFAULT_DATA);
+  normalizeSpringLabels();
   passwords = { ...DEFAULT_PASSWORDS };
   saveData();
   savePasswords();
@@ -764,6 +835,40 @@ $("jumpTotalBtn").addEventListener("click", () => {
 });
 
 
+$("closeTools").onclick = () => $("quoteTools").close();
+$("quoteTools").addEventListener("close", () => { adjustmentsOpen = false; });
+$("quoteTools").addEventListener("click", event => { if (event.target === $("quoteTools")) $("quoteTools").close(); });
+$("applyDiscount").onclick = () => {
+  const value = Number($("discountValue").value);
+  const type = $("discountType").value;
+  const current = computeQuote(data[selectedCategory].groups, selections, quantity, quoteExtras, { type: "fixed", value: 0 });
+  if (!Number.isFinite(value) || value < 0 || (type === "percent" && value > 100) || (type === "fixed" && value > current.total)) {
+    $("toolError").textContent = "Enter a valid discount within the quote total (0–100 for percent).";
+    return;
+  }
+  quoteDiscount = { type, value };
+  calculate();
+  $("quoteTools").close();
+};
+$("saveExtra").onclick = () => {
+  const label = $("extraLabel").value.trim();
+  const price = Number($("extraPrice").value);
+  const count = Number($("extraQuantity").value);
+  if (!label || !$("extraPrice").value || !Number.isFinite(price) || price < 0 || !Number.isInteger(count) || count < 1 || count > 100) {
+    $("toolError").textContent = "Enter a description, a non-negative price and a whole quantity from 1 to 100.";
+    return;
+  }
+  quoteExtras.push({ label, price: Math.round(price * 100) / 100, quantity: count, perUnit: $("extraPerUnit").checked });
+  renderExtras();
+  calculate();
+  $("extraLabel").value = "";
+  $("extraPrice").value = "";
+  $("extraQuantity").value = "1";
+  $("extraPerUnit").checked = false;
+  $("quoteTools").close();
+};
+
 // Load shared Admin settings from Netlify on page open.
 // If the site is opened locally without Netlify Functions, it falls back to the built-in defaults.
 loadGlobalSettings();
+
