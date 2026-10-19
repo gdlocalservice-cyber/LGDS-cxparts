@@ -54,9 +54,9 @@ const DEFAULT_DATA = {
         multi: true,
         required: false,
         options: [
-          { label: "Existing customer discount", price: -200 },
-          { label: "Veteran discount", price: -150 },
-          { label: "Senior discount", price: -125 }
+          { label: "Returning customer · 10%", price: 0, percent: 10 },
+          { label: "Veteran · 7.5%", price: 0, percent: 7.5 },
+          { label: "Senior · 10%", price: 0, percent: 10 }
         ]
       }
     ]
@@ -200,6 +200,8 @@ let adjustmentsOpen = false;
 
 // Labels are presentation only; retain the existing option prices and indices.
 function normalizeSpringLabels() {
+  const discounts = data.springs?.groups.find(group => group.key === "discounts");
+  if (discounts) discounts.options = clone(DEFAULT_DATA.springs.groups.find(group => group.key === "discounts").options);
   if (data.openers?.groups) {
     if (data.openers.catalogVersion !== 2) {
       const brand = data.openers.groups.find(group => group.key === "brand");
@@ -604,15 +606,32 @@ function openQuoteTools(mode) {
   $("discountValue").value = quoteDiscount.value;
   const presets = $("discountPresets");
   presets.innerHTML = "";
-  const group = data[selectedCategory].groups.find(g => /discount/i.test(g.key));
-  (group?.options || []).filter(option => Number(option.price) < 0).forEach(option => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "ghost";
-    button.textContent = `${option.label} (${money(Math.abs(option.price))})`;
-    button.onclick = () => { $("discountType").value = "fixed"; $("discountValue").value = Math.abs(option.price); };
-    presets.appendChild(button);
+  const selectedPresets = quoteDiscount.presets || [];
+  const presetOptions = [
+    { id: "returning", label: "Returning customer", percent: 10 },
+    { id: "veteran", label: "Veteran", percent: 7.5 },
+    { id: "senior", label: "Senior", percent: 10 }
+  ];
+  presetOptions.forEach(option => {
+    const label = document.createElement("label");
+    label.className = "checkbox-label";
+    label.innerHTML = `<input type="checkbox" data-discount-id="${option.id}" data-percent="${option.percent}" /> ${option.label} · ${option.percent}%`;
+    const input = label.querySelector("input");
+    input.checked = selectedPresets.includes(option.id);
+    input.onchange = () => {
+      if (input.checked && option.id !== "veteran") {
+        presets.querySelectorAll("input").forEach(other => {
+          if (other !== input && other.dataset.discountId !== "veteran") other.checked = false;
+        });
+      }
+      $("discountType").value = "percent";
+      $("discountValue").value = [...presets.querySelectorAll("input:checked")].reduce((sum, el) => sum + Number(el.dataset.percent), 0);
+    };
+    presets.appendChild(label);
   });
+  const clearPresetChecks = () => presets.querySelectorAll("input").forEach(input => { input.checked = false; });
+  $("discountType").onchange = clearPresetChecks;
+  $("discountValue").oninput = clearPresetChecks;
   $("toolError").textContent = "";
   dialog.showModal();
 }
@@ -725,7 +744,7 @@ function buildCustomerIntro(category) {
     <div class="brand-showcase-grid two-brands">
       ${brands.map(([file, name]) => `<div class="brand-tile"><img src="assets/brands/${file}.svg" alt="${name}" width="160" height="60" /></div>`).join("")}
     </div>
-    <p class="brand-context">${spring ? "Garage door brands · And more" : "These brands and more"}</p>
+    <p class="brand-context">${spring ? "Garage door brands" : "Brands we work with"}<strong class="brands-more">These brands &amp; more</strong></p>
   `;
   return wrap;
 }
@@ -802,7 +821,7 @@ $("applyDiscount").onclick = () => {
     $("toolError").textContent = "Enter a valid discount within the quote total (0–100 for percent).";
     return;
   }
-  quoteDiscount = { type, value };
+  quoteDiscount = { type, value, presets: [...$("discountPresets").querySelectorAll("input:checked")].map(input => input.dataset.discountId) };
   calculate();
   $("quoteTools").close();
 };
