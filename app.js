@@ -258,6 +258,26 @@ function normalizeSpringLabels() {
     }));
   }
   applyPriceRevision(data);
+  if (data.openers?.groups && (data.openers.photoCatalogVersion !== 1 || data.openers.groups.find(g => g.key === "brand")?.options.some(option => !option.previewKey))) {
+    const group = data.openers.groups.find(g => g.key === "brand");
+    const specs = [
+      ["Chamberlain · 1/2 HP · Belt Drive", "cbasic", "B3010"],
+      ["Chamberlain · 3/4 HP · Camera", "cplus", "B4310"],
+      ["Chamberlain · 1 HP · Camera", "ccamera", "B5330"],
+      ["LiftMaster · 3/4 HPs · Camera", "lbase", "2220L"],
+      ["LiftMaster · 3/4 HPs · Camera · Battery Backup", "lplus", "2420L"],
+      ["LiftMaster · 1 HPs · Camera · Belt Drive", "lcamera", "6580L"],
+      ["Chamberlain · Side Mount", "cwall", "RJO101"],
+      ["LiftMaster · Side Mount", "lwall", "98022"]
+    ];
+    group?.options.forEach((option,index) => {
+      if (index < specs.length && /chamberlain|liftmaster/i.test(option.label)) {
+        [option.label, option.previewKey, option.model] = specs[index];
+      }
+    });
+    data.openers.photoCatalogVersion = 1;
+  }
+
   const side = data.springs?.groups.find(group => group.key === "side");
   if (!side) return;
   side.label = "Spring color / quantity";
