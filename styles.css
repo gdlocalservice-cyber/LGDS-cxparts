@@ -1445,3 +1445,26 @@ body:not(.admin-view) .brand-intro .logo-image-wrap img,
   .lifetime-badge { font-size: 11px; }
   body.tech-mode .brand-intro .logo-image-wrap img { max-height: 78px; }
 }
+
+/* Individually fitted original logos, never scaled-down collages. */
+body.tech-mode .customer-intro.brand-showcase,
+.brand-showcase { padding: 18px 20px 14px; border-radius: 18px; border: 1px solid #dfe5ed; background: linear-gradient(145deg,#fff,#fafbfe); box-shadow: 0 6px 24px #172c6507; }
+.showcase-topline { color: #7d8798; font-size: 9px; letter-spacing: .18em; font-weight: 800; margin-bottom: 13px; }
+.showcase-title { margin: 0 0 17px; color: #172c65; font-size: 22px; letter-spacing: -.035em; }
+.brand-showcase-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.brand-showcase-grid.two-brands { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.brand-tile { height: 72px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #e6eaf0; border-radius: 10px; padding: 15px 13px; }
+.brand-tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.warranty-feature { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.warranty-mark { display: grid; place-items: center; flex: 0 0 45px; height: 51px; background: #fbf1d4; color: #a47b20; border: 1px solid #e9d393; border-radius: 13px 13px 20px 20px; font-size: 27px; font-weight: 800; }
+.warranty-overline { color: #7d8798; font-size: 9px; font-weight: 800; letter-spacing: .14em; }
+.warranty-feature h2 { margin: 3px 0 0; color: #172c65; font-size: clamp(24px,5vw,34px); line-height: 1.1; letter-spacing: -.045em; }
+.warranty-feature h2 span { color: #a77b23; }
+.brand-context { margin: 9px 0 0; font-size: 10px; color: #8b94a3; text-align: center; }
+@media(max-width:520px) {
+ body.tech-mode .customer-intro.brand-showcase { padding: 15px 14px 12px; }
+ .brand-showcase-grid { gap: 7px; }
+ .brand-tile { height: 58px; padding: 10px 9px; border-radius: 8px; }
+ .showcase-title { font-size: 20px; }
+ .warranty-feature { margin-bottom: 16px; }
+}
