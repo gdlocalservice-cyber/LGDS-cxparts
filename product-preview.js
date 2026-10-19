@@ -5,7 +5,7 @@
     const host=document.getElementById('productPreview');if(!host)return;
     if(!['doors','openers'].includes(category)){host.hidden=true;return;}host.hidden=false;
     const pick=key=>{const index=selections[key];return index==null?null:groups.find(g=>g.key===key)?.options[index];};
-    let item=null,title='',details='',note='';
+    let item=null,title='',details='',note='',custom=false,scale=null;
     if(category==='openers') {
       const option=pick('brand');title='Your opener';details=option?.label||'';
       if(option?.previewKey && motors[option.previewKey]) {item=motors[option.previewKey];item={...item,caption:option.label};}
@@ -13,18 +13,22 @@
     } else {
       title='Your door';
       const size=pick('size'),shape=pick('shape'),windows=pick('windows'),color=pick('color');
-      const scale=size?(parseFloat(size.label)>=16?'double':'single'):null;
-      const panel=shape?(/flush/i.test(shape.label)?'flush':/long/i.test(shape.label)?'long':'short'):null;
-      const glass=windows?(/no windows/i.test(windows.label)?'none':/long/i.test(windows.label)?'long':'short'):null;
-      const finish=color?.label.trim().toLowerCase();
-      const colorKey=finish&&(/wood/i.test(finish)?'wood':finish);
+      scale=size?(parseFloat(size.label)>=16?'double':'single'):null;
+      const panel=shape?({'short panel':'short','long panel':'long'}[shape.label.trim().toLowerCase()]||null):'short';
+      const glass=windows?(/no windows/i.test(windows.label)?'none':panel):'none';
+      const finish=color?.label.trim().toLowerCase()||'white';
+      const colorKey=finish==='woodgrain'?'wood':finish;
+      const standardSize=/^(8x6\.3|8x6\.6|8x6\.9|8x7|8x8|9x7|9x8|10x7|10x8|16x7|16x8|18x7|18x8)$/i.test(size?.label.trim()||'');
       const key=[scale,panel,colorKey,glass].join('-');
-      const src=window.LGDS_DOOR_PHOTOS?.[key];
+      let src=window.LGDS_DOOR_PHOTOS?.[key];
+      custom=!!size&&(!standardSize||!src);
+      if(custom)src=window.LGDS_DOOR_PHOTOS?.[`${scale}-short-white-none`];
       details=['size','shape','color','windows'].map(k=>pick(k)?.label).filter(Boolean).join(' · ');
-      if(src)item={src,caption:`Clopay · ${scale==='double'?'16×7':'8×7'} display · ${shape.label} · ${color.label} · ${windows.label}`,source:'https://www.clopaydoor.com/ezdoor'};
-      note=item?'Original Clopay configurator image. Single doors are displayed as 8×7; double doors as 16×7. The quoted dimensions remain as selected.':(size&&shape&&windows&&color?'An exact Clopay image for this combination has not been added yet.':'Select size, panel style, color and windows to see your door.');
+      if(size&&src)item={src,caption:custom?`Custom made · ${scale==='double'?'16×7':'8×7'} base reference`:`Clopay · ${scale==='double'?'16×7':'8×7'} display · ${shape?.label||'Short panel'} · ${color?.label||'White'} · ${windows?.label||'No windows'}`,source:'https://www.clopaydoor.com/ezdoor'};
+      note=!size?'Select a door size to start your preview.':custom?'Custom-made selection. The base door is shown as a reference; the final design will differ.':'Clopay design preview · Single shown as 8×7; double as 16×7.';
     }
-    const visual=item?`<img class="opener-photo" style="height:${category==='doors'?'300':'240'}px" src="${esc(item.src)}" alt="${esc(item.caption)}" referrerpolicy="no-referrer" />`:'<div class="preview-empty">'+(category==='doors'?esc(note):'Select an opener to view the manufacturer photo.')+'</div>';
+    let visual=item?`<img class="opener-photo" style="${category==='doors'?'height:auto':'height:240px'}" src="${esc(item.src)}" alt="${esc(item.caption)}" referrerpolicy="no-referrer" />`:'<div class="preview-empty">'+(category==='doors'?esc(note):'Select an opener to view the manufacturer photo.')+'</div>';
+    if(item&&category==='doors')visual=`<div class="door-preview-frame" style="--door-width:${scale==='double'?'690':'343'}px">${visual}${custom?'<span class="door-custom-watermark">CUSTOM MADE</span>':''}</div>`;
     host.innerHTML=`<div class="preview-heading"><span>${title}</span><button id="expandPreview" type="button" ${item?'':'disabled'}>⤢ Enlarge</button></div><div class="preview-art">${visual}</div><div class="preview-details">${esc(details)}</div>${item?`<p class="preview-note"><strong>Photo:</strong> ${esc(item.caption)}</p>`:''}<p class="preview-note">${note}</p>${item?`<p class="preview-note"><a href="${esc(item.source)}" target="_blank" rel="noopener noreferrer">View manufacturer product</a>${category==='doors'?' · <a href="https://ezdoor.clopay.com/" target="_blank" rel="noopener noreferrer">Customize on Clopay</a>':''}</p>`:''}`;
     const img=host.querySelector('img');if(img)img.onerror=()=>img.replaceWith(Object.assign(document.createElement('p'),{className:'preview-empty',textContent:'Photo unavailable. View the manufacturer link below.'}));
     document.getElementById('expandPreview').onclick=()=>{
