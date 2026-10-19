@@ -180,6 +180,31 @@ const DEFAULT_DATA = {
   }
 };
 
+function applyPriceRevision(catalog) {
+  if (catalog.openers && catalog.openers.priceRevision !== "20261019-v3") {
+    catalog.openers.groups.find(group => group.key === "brand")?.options.forEach(option => {
+      if (/chamberlain/i.test(option.label)) option.price = (Number(option.price) || 0) + 200;
+      else if (/liftmaster/i.test(option.label)) option.price = (Number(option.price) || 0) + 400;
+    });
+    catalog.openers.priceRevision = "20261019-v3";
+  }
+  if (catalog.doors && catalog.doors.priceRevision !== "20261019-v3") {
+    catalog.doors.groups.find(group => group.key === "size")?.options.forEach(option => {
+      const width = parseFloat(option.label);
+      if (Number.isFinite(width)) option.price = Math.max(0, (Number(option.price) || 0) + (width >= 16 ? 350 : -350));
+    });
+    catalog.doors.groups.find(group => group.key === "insulation")?.options.forEach(option => {
+      if (/steelback|sandwich/i.test(option.label)) option.price = Math.round((Number(option.price) || 0) * 125) / 100;
+    });
+    catalog.doors.groups.find(group => group.key === "color")?.options.forEach(option => {
+      if (option.label.trim().toLowerCase() !== "white") option.price = (Number(option.price) || 0) + 150;
+    });
+    catalog.doors.priceRevision = "20261019-v3";
+  }
+}
+DEFAULT_DATA.openers.catalogVersion = 2;
+applyPriceRevision(DEFAULT_DATA);
+
 const DATA_KEY = "lgdsPricingCalculatorData.v1";
 const PASS_KEY = "lgdsPricingCalculatorPasswords.v1";
 const SETTINGS_API = "/.netlify/functions/settings";
@@ -207,6 +232,7 @@ function normalizeSpringLabels() {
       const brand = data.openers.groups.find(group => group.key === "brand");
       if (brand) brand.options = clone(DEFAULT_DATA.openers.groups.find(group => group.key === "brand").options);
       data.openers.catalogVersion = 2;
+      data.openers.priceRevision = DEFAULT_DATA.openers.priceRevision;
     }
 
     data.openers.groups = data.openers.groups.filter(group => !/labor|warranty/i.test(group.key) && !/labor|warranty/i.test(group.label));
@@ -214,6 +240,7 @@ function normalizeSpringLabels() {
       option.label = option.label.replace(/\s*\+\s*.*?warranty\b/gi, "").trim();
     }));
   }
+  applyPriceRevision(data);
   const side = data.springs?.groups.find(group => group.key === "side");
   if (!side) return;
   side.label = "Spring color / quantity";
