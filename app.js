@@ -430,6 +430,10 @@ function renderForm() {
   form.innerHTML = "";
 
   form.appendChild(buildCustomerIntro(selectedCategory));
+  const preview = document.createElement("section");
+  preview.id = "productPreview";
+  preview.className = "product-preview";
+  form.appendChild(preview);
 
   if (!document.body.classList.contains("admin-view")) {
     const backWrap = document.createElement("div");
@@ -598,6 +602,7 @@ function calculate() {
   if (railsSection) railsSection.hidden = !!wallMount;
   const quoteGroups = data[selectedCategory].groups.filter(group => !(wallMount && group.key === "rails"));
   const result = computeQuote(quoteGroups, selections, quantity, quoteExtras, quoteDiscount);
+  window.renderProductPreview?.(selectedCategory, data[selectedCategory].groups, selections);
   $("totalAmount").textContent = money(result.total);
   if ($("bottomTotalAmount")) $("bottomTotalAmount").textContent = money(result.total);
   $("liveTotal").textContent = money(result.total);
