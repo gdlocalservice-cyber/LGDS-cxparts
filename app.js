@@ -347,7 +347,7 @@ function initSelections() {
     if (group.multi) {
       selections[group.key] = [];
     } else {
-      selections[group.key] = group.options.length ? 0 : null;
+      selections[group.key] = null;
     }
   });
   quantity = 1;
@@ -562,7 +562,7 @@ function calculate() {
     const group = data[selectedCategory].groups.find(g => g.key === button.dataset.groupKey);
     const picked = selections[group.key];
     const indexes = Array.isArray(picked) ? picked : [picked];
-    section.querySelector(".selection-label").textContent = indexes.map(i => group.options[i]?.label).filter(Boolean).join(", ") || "Optional";
+    section.querySelector(".selection-label").textContent = indexes.map(i => group.options[i]?.label).filter(Boolean).join(", ") || (group.multi ? "Optional" : "Choose one");
   });
 }
 
