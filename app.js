@@ -70,10 +70,10 @@ const DEFAULT_DATA = {
         multi: false,
         required: true,
         options: [
-          { label: "Chamberlain 1/2 HP + 6 month warranty", price: 340 },
-          { label: "Chamberlain 3/4 HP + 1 year warranty", price: 575 },
-          { label: "LiftMaster 8155 + 15 years warranty", price: 1275 },
-          { label: "LiftMaster 84504R + 20 years warranty", price: 1645 }
+          { label: "Chamberlain 1/2 HP", price: 340 },
+          { label: "Chamberlain 3/4 HP", price: 575 },
+          { label: "LiftMaster 8155", price: 1275 },
+          { label: "LiftMaster 84504R", price: 1645 }
         ]
       },
       {
@@ -87,15 +87,6 @@ const DEFAULT_DATA = {
           { label: "9 ft", price: 345 },
           { label: "10 ft", price: 375 },
           { label: "No rail", price: 0 }
-        ]
-      },
-      {
-        key: "labor",
-        label: "Labor",
-        multi: false,
-        required: true,
-        options: [
-          { label: "Labor", price: 275 }
         ]
       }
     ]
@@ -205,6 +196,12 @@ let adjustmentsOpen = false;
 
 // Labels are presentation only; retain the existing option prices and indices.
 function normalizeSpringLabels() {
+  if (data.openers?.groups) {
+    data.openers.groups = data.openers.groups.filter(group => !/labor|warranty/i.test(group.key) && !/labor|warranty/i.test(group.label));
+    data.openers.groups.forEach(group => group.options.forEach(option => {
+      option.label = option.label.replace(/\s*\+\s*.*?warranty\b/gi, "").trim();
+    }));
+  }
   const side = data.springs?.groups.find(group => group.key === "side");
   if (!side) return;
   side.label = "Spring color / quantity";
@@ -696,83 +693,18 @@ function openerMiniLogo(label) {
 
 function buildCustomerIntro(category) {
   const wrap = document.createElement("section");
-  wrap.className = "customer-intro";
-
-  if (category === "springs") {
-    wrap.innerHTML = `
-      <div class="customer-hero">
-        <div class="customer-title">Professional Spring Replacement</div>
-      </div>
-      <div class="logo-image-wrap">
-        <img src="assets/springs-logos.png" alt="Spring brands" />
-      </div>
-      <div class="spring-copy">
-        <p class="big">Springs selected for your garage door.</p>
-        <p>Your technician will confirm the correct spring specifications for your door.</p>
-        <p>Ask your technician about the cycle rating and warranty for the springs included in your quote.</p>
-      </div>
-      <div class="customer-hero">
-        <div class="customer-title">Highest Quality Springs</div>
-      </div>
-      <div class="diameters-block">
-        <div class="diameters-title">Diameters:</div>
-        <ul class="diameters-list">
-          <li>1.75"</li>
-          <li>2"</li>
-          <li>2.625"</li>
-        </ul>
-      </div>
-      <div class="customer-hero">
-        <div class="customer-title">Professional Spring Replacement</div>
-      </div>
-    `;
-    return wrap;
-  }
-
-  if (category === "openers") {
-    wrap.innerHTML = `
-      <div class="logo-image-wrap">
-        <img src="assets/openers-logos.png" alt="Opener brands" />
-      </div>
-      <div class="spring-copy">
-        <p><strong>Expertise and Personalized Service</strong></p>
-        <p>At our company, we specialize in garage door openers, offering expert advice and personalized service.</p>
-        <p><strong>Professional Installation</strong></p>
-        <p>When you purchase a garage door opener from us, you have the option to avail professional installation services.</p>
-        <p>Your quote includes the selected opener, rail and installation labor shown in the summary.</p>
-      </div>
-      <div class="customer-hero">
-        <div class="customer-title">Highest Quality Openers</div>
-      </div>
-      <div class="customer-hero" style="padding-top:0">
-        <div class="customer-title" style="color:#4257a8">BUY NOW</div>
-      </div>
-    `;
-    return wrap;
-  }
-
+  wrap.className = "customer-intro brand-intro";
+  const titles = { springs: "Spring Replacement", openers: "Garage Door Openers", doors: "Garage Doors" };
+  const logos = { springs: "springs-logos.png", openers: "openers-logos.png", doors: "doors-logos.png" };
   wrap.innerHTML = `
-    <div class="spring-copy">
-      <p><strong>Expertise and Personalized Service</strong></p>
-      <p>Your premier destination for top-quality garage doors and exceptional service.</p>
-      <p><strong>Professional Installation</strong></p>
-      <p>When you purchase a garage door from us, you have the option to avail professional installation services.</p>
+    <div class="brand-intro-heading">
+      <span class="brand-category-title">${titles[category]}</span>
+      ${category === "springs" ? '<span class="lifetime-badge"><span aria-hidden="true">✓</span> Lifetime Warranty</span>' : ""}
     </div>
-    <div class="customer-hero">
-      <div class="customer-title">Professional Door Installation</div>
-    </div>
-    <div class="customer-hero" style="padding-top:0">
-      <div class="customer-title" style="color:#4257a8">BUY NOW</div>
-    </div>
-    <div class="logo-image-wrap">
-      <img src="assets/doors-logos.png" alt="Door brands" />
-    </div>
+    <div class="logo-image-wrap"><img src="assets/${logos[category]}" alt="${category === "openers" ? "Opener" : category === "springs" ? "Spring" : "Garage door"} brands" /></div>
   `;
   return wrap;
 }
-
-
-
 
 function escapeHtml(str) {
   return String(str)
@@ -871,4 +803,5 @@ $("saveExtra").onclick = () => {
 // Load shared Admin settings from Netlify on page open.
 // If the site is opened locally without Netlify Functions, it falls back to the built-in defaults.
 loadGlobalSettings();
+
 
