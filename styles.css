@@ -1493,3 +1493,8 @@ body.tech-mode .customer-intro.brand-showcase,
 .preview-dialog button { display:block; margin-left:auto; min-width:44px; min-height:44px; border:0; border-radius:50%; font-size:28px; cursor:pointer; }
 .preview-dialog p { font-size:12px; color:#667085; }
 @media(min-width:1000px) { body.tech-mode .form-area:has(#productPreview:not([hidden])) { display:flow-root; } body.tech-mode .product-preview:not([hidden]) { float:right; width:44%; margin:14px 0 20px 24px; } body.tech-mode .form-area:has(#productPreview:not([hidden])) .group, body.tech-mode .form-area:has(#productPreview:not([hidden])) .qty-row, body.tech-mode .form-area:has(#productPreview:not([hidden])) .quote-extras { width:calc(56% - 24px); } }
+
+
+.door-preview-frame { position:relative; width:var(--door-width); max-width:100%; margin:0 auto; isolation:isolate; overflow:hidden; }
+.door-preview-frame .opener-photo { display:block; width:100%; max-width:100%; object-fit:contain; }
+.door-custom-watermark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; transform:rotate(-22deg); font-weight:900; font-size:clamp(23px,5vw,48px); letter-spacing:.07em; color:rgba(143,91,35,.33); text-shadow:0 1px 0 rgba(255,255,255,.4); pointer-events:none; white-space:nowrap; }
