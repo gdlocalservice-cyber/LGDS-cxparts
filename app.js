@@ -138,7 +138,6 @@ const DEFAULT_DATA = {
         options: [
           { label: "White", price: 0 },
           { label: "Almond", price: 0 },
-          { label: "Sandstone", price: 0 },
           { label: "Brown", price: 0 },
           { label: "Custom color", price: 0 }
         ]
@@ -150,8 +149,7 @@ const DEFAULT_DATA = {
         required: true,
         options: [
           { label: "Short panel", price: 0 },
-          { label: "Long panel", price: 0 },
-          { label: "Flush", price: 450 }
+          { label: "Long panel", price: 0 }
         ]
       },
       {
@@ -218,6 +216,10 @@ function applyPriceRevision(catalog) {
     });
     catalog.doors.priceRevision = "20261019-v3";
   }
+  catalog.doors?.groups.forEach(group => {
+    if (group.key === "shape") group.options = group.options.filter(option => !/\bflush\b/i.test(option.label));
+    if (group.key === "color") group.options = group.options.filter(option => !/sand\s*stone/i.test(option.label));
+  });
   const colors = catalog.doors?.groups.find(group => group.key === "color");
   if (colors) {
     for (const label of ["Black", "Woodgrain"]) {
